@@ -1,9 +1,13 @@
-import { add } from "./main.ts"
+import { walkDir } from "./main.ts"
 
-Deno.bench(function addSmall() {
-  add(1, 2)
+Deno.bench(async function readCodeBase() {
+  await walkDir("/Users/jack/dev/jackchw", async (_filePath) => {
+    return
+  })
 })
 
-Deno.bench(function addBig() {
-  add(2 ** 32, 2 ** 32)
+Deno.bench(async function readRoot() {
+  await walkDir(".", async (_filePath) => {
+    return
+  })
 })

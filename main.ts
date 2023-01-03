@@ -1,22 +1,42 @@
-export function add(a: number, b: number): number {
-  return a + b
-}
+import * as path from "https://deno.land/std@0.170.0/path/mod.ts"
 
-export const getAllpath = async (sourcePath: string): Promise<string[]> => {
-  const files: string[] = []
+export const walkDir = async (
+  sourcePath: string,
+  callback: (filePath: string) => Promise<void>
+): Promise<string[]> => {
+  if (path.isAbsolute(sourcePath)) {
+    sourcePath = await Deno.realPath(sourcePath)
+  }
+
+  const fileReaders: string[] = []
   for await (const item of Deno.readDir(sourcePath)) {
-    if (item.isFile || item.isSymlink) {
-      files.push(item.name)
+    const itemPath = path.join(sourcePath, item.name)
+
+    if (item.isFile) {
+      callback(itemPath)
+      fileReaders.push(itemPath)
     } else if (item.isDirectory) {
-      const content = await getAllpath(item.name)
-      files.push(...content)
+      try {
+        const content = await walkDir(itemPath, callback)
+        fileReaders.push(...content)
+      } catch (_error: unknown) {
+        console.log("Can't read: ", item.name)
+      }
     }
   }
-  return files
+
+  return fileReaders
+}
+
+export const isZip = async (filePath: string): Promise<boolean> => {
+  return path.extname(filePath) === ".zip"
 }
 
 // Learn more at https://deno.land/manual/examples/module_metadata#concepts
 if (import.meta.main) {
-  const output = await getAllpath("/")
-  console.log(output)
+  await walkDir(".", async (filePath) => {
+    if (await isZip(filePath)) {
+      console.log(filePath)
+    }
+  })
 }

@@ -2,4 +2,5 @@
   "tasks": {
     "dev": "deno run --watch --allow-all main.ts"
   }
+  ,"lint": {"rules": {"exclude": ["require-await"]}}
 }
