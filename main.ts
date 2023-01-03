@@ -64,9 +64,9 @@ export const unzip = async (filePath: string) => {
   }
 }
 
-// Learn more at https://deno.land/manual/examples/module_metadata#concepts
 if (import.meta.main) {
-  await walkDir("/home/jack/.library", async (filePath) => {
+  const sourcePath = Deno.args[0]
+  await walkDir(sourcePath, async (filePath) => {
     await unzip(filePath)
   })
 }
