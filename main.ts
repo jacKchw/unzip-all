@@ -28,15 +28,25 @@ export const walkDir = async (
   return fileReaders
 }
 
-export const isZip = async (filePath: string): Promise<boolean> => {
-  return path.extname(filePath) === ".zip"
+export const unzip = async (filePath:string)=>{
+    const ext = path.extname(filePath)
+    if (ext !== ".zip") {
+      return
+    }
+    
+    const base = path.basename(filePath,ext)
+    const dir = path.dirname(filePath)
+    const newDir =path.join(dir,base )
+
+    await Deno.mkdir(newDir)
+    const process = Deno.run({cmd:["unzip", filePath,"-d",newDir]})
+    await process.status()
+    await Deno.remove(filePath)
 }
 
 // Learn more at https://deno.land/manual/examples/module_metadata#concepts
 if (import.meta.main) {
-  await walkDir(".", async (filePath) => {
-    if (await isZip(filePath)) {
-      console.log(filePath)
-    }
+  await walkDir("/home/jack/.library", async (filePath) => {
+    await unzip(filePath)
   })
 }
