@@ -1,5 +1,5 @@
 import * as path from "https://deno.land/std@0.170.0/path/mod.ts"
-import { walkDir } from "./main"
+import { walkDir } from "./main.ts"
 
 export const convert2png = async (filePath: string) => {
   const ext = path.extname(filePath)
