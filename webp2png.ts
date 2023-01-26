@@ -14,7 +14,7 @@ export const convert2png = async (filePath: string) => {
   try {
     // convert
     const process = Deno.run({
-      cmd: ["webp", filePath, "-o", newDir],
+      cmd: ["dwebp", filePath, "-o", newDir],
       stdout: "null",
       stderr: "piped",
     })
