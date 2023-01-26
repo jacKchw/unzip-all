@@ -2,7 +2,8 @@
   "tasks": {
     "dev": "deno run --watch --allow-all main.ts",
     "run": "deno run --allow-read --allow-write --allow-run main.ts",
-    "webp2png": "deno run --allow-read --allow-write --allow-run webp2png.ts"
+    "webp2png": "deno run --allow-read --allow-write --allow-run webp2png.ts",
+    "zip": "deno run --allow-read --allow-write --allow-run zip.ts"
   }
   ,"lint": {"rules": {"exclude": ["require-await"]}}
 }
