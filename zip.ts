@@ -34,6 +34,17 @@ export const walkOnlyDir = async (
 }
 
 export const zip = async (filePath: string, ext = "zip") => {
+  const imageExt = path.extname(filePath)
+  if (
+    !(
+      imageExt == ".png" ||
+      imageExt == ".webp" ||
+      imageExt == ".jpg" ||
+      imageExt == ".jpeg"
+    )
+  ) {
+    return
+  }
   const dir = path.dirname(filePath)
   const outputFileName = dir + "." + ext
 
