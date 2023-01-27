@@ -1,5 +1,6 @@
 import * as path from "https://deno.land/std@0.170.0/path/mod.ts"
 import { parse } from "https://deno.land/std@0.174.0/flags/mod.ts"
+import { walkDir } from "./main.ts"
 
 export const walkOnlyDir = async (
   sourcePath: string,
@@ -32,14 +33,13 @@ export const walkOnlyDir = async (
   }
 }
 
-export const zip = async (dirPath: string, ext = "zip") => {
-  const outputFileName = dirPath + "." + ext
+export const zip = async (filePath: string, ext = "zip") => {
+  const dir = path.dirname(filePath)
+  const outputFileName = dir + "." + ext
 
-  console.log("start zip: ", dirPath)
   // zip
   const process = Deno.run({
-    cwd: dirPath,
-    cmd: ["zip", "-r", outputFileName, "*"],
+    cmd: ["zip", outputFileName, filePath],
     stdout: "inherit",
     stderr: "piped",
   })
@@ -52,14 +52,6 @@ export const zip = async (dirPath: string, ext = "zip") => {
     const errorString = new TextDecoder().decode(rawError)
     throw new Error(errorString)
   }
-
-  try {
-    // Remove .zip file
-    await Deno.remove(dirPath, { recursive: true })
-    console.log("zip: ", dirPath)
-  } catch (error: unknown) {
-    console.log(error)
-  }
 }
 
 if (import.meta.main) {
@@ -69,11 +61,26 @@ if (import.meta.main) {
     throw new Error("Required sourcePath")
   if (flags.d == undefined) throw new Error("Required flag -d NUM")
 
-  await walkOnlyDir(sourcePath, flags.d, 0, async (filePath) => {
+  await walkDir(sourcePath, async (filePath) => {
     if (flags.dry) {
       console.log(filePath + "." + flags.ext)
     } else {
       await zip(filePath, flags.ext)
+    }
+  })
+
+  // delete folder
+  await walkOnlyDir(sourcePath, flags.d, 0, async (filePath) => {
+    if (flags.dry) {
+      console.log(filePath + "." + flags.ext)
+    } else {
+      try {
+        // Remove folder
+        await Deno.remove(filePath, { recursive: true })
+        console.log("zip: ", filePath)
+      } catch (error: unknown) {
+        console.log(error)
+      }
     }
   })
 }
