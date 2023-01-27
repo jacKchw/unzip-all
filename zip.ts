@@ -1,6 +1,5 @@
 import * as path from "https://deno.land/std@0.170.0/path/mod.ts"
 import { parse } from "https://deno.land/std@0.174.0/flags/mod.ts"
-import { walkDir } from "./main.ts"
 
 export const walkOnlyDir = async (
   sourcePath: string,
@@ -33,25 +32,35 @@ export const walkOnlyDir = async (
   }
 }
 
-export const zip = async (filePath: string, ext = "zip") => {
-  const imageExt = path.extname(filePath)
-  if (
-    !(
-      imageExt == ".png" ||
-      imageExt == ".webp" ||
-      imageExt == ".jpg" ||
-      imageExt == ".jpeg"
-    )
-  ) {
-    return
+export const zip = async (folderPath: string, ext = "zip") => {
+  // convert to absolute path
+  if (!path.isAbsolute(folderPath)) {
+    folderPath = await Deno.realPath(folderPath)
+  }
+
+  const zipFilePath = `${folderPath}.${ext}`
+
+  // read through directory
+  for await (const item of Deno.readDir(folderPath)) {
+    const itemPath = path.join(folderPath, item.name)
+    await zipFile(zipFilePath, itemPath)
+  }
+  await Deno.remove(folderPath, { recursive: true })
+}
+
+export const zipFile = async (zipfilePath: string, filePath: string) => {
+  // convert to absolute path
+  if (!path.isAbsolute(zipfilePath)) {
+    zipfilePath = await Deno.realPath(zipfilePath)
   }
   const dir = path.dirname(filePath)
-  const outputFileName = dir + "." + ext
+  const fileName = path.basename(filePath)
 
   // zip
   const process = Deno.run({
-    cmd: ["zip", outputFileName, filePath],
-    stdout: "inherit",
+    cwd: dir,
+    cmd: ["zip", "-r", zipfilePath, fileName],
+    stdout: "null",
     stderr: "piped",
   })
 
@@ -72,22 +81,13 @@ if (import.meta.main) {
     throw new Error("Required sourcePath")
   if (flags.d == undefined) throw new Error("Required flag -d NUM")
 
-  await walkDir(sourcePath, async (filePath) => {
-    if (flags.dry) {
-      console.log(filePath + "." + flags.ext)
-    } else {
-      await zip(filePath, flags.ext)
-    }
-  })
-
-  // delete folder
   await walkOnlyDir(sourcePath, flags.d, 0, async (filePath) => {
     if (flags.dry) {
       console.log(filePath + "." + flags.ext)
     } else {
       try {
         // Remove folder
-        await Deno.remove(filePath, { recursive: true })
+        zip(filePath, flags.ext)
         console.log("zip: ", filePath)
       } catch (error: unknown) {
         console.log(error)
