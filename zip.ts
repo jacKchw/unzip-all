@@ -41,41 +41,43 @@ export const walkOnlyDir = async (
 }
 
 const zip = async (folderPath: string, ext = "zip") => {
-  // update progress bar
-  progressBarTotal++
-  progressBar.render(progressBarCompleted, { total: progressBarTotal })
-
-  // convert to absolute path
   if (!path.isAbsolute(folderPath)) {
     folderPath = await Deno.realPath(folderPath)
   }
 
-  const zipFilePath = `${folderPath}.${ext}`
-
-  // read through directory
-  for await (const item of Deno.readDir(folderPath)) {
-    const itemPath = path.join(folderPath, item.name)
-    await zipFile(zipFilePath, itemPath)
-  }
-  await Deno.remove(folderPath, { recursive: true })
-
   // update progress bar
-  progressBarCompleted++
+  for await (const _item of Deno.readDir(folderPath)) {
+    progressBarTotal++
+  }
   progressBar.render(progressBarCompleted, { total: progressBarTotal })
+
+  // zip
+  const zipFilePath = `${folderPath}.${ext}`
+  for await (const item of Deno.readDir(folderPath)) {
+    await zipFile(zipFilePath, folderPath, item.name)
+
+    // update progress bar
+    progressBarCompleted++
+    progressBar.render(progressBarCompleted, { total: progressBarTotal })
+  }
+
+  await Deno.remove(folderPath, { recursive: true })
   progressBar.console("ziped: " + zipFilePath)
 }
 
-export const zipFile = async (zipfilePath: string, filePath: string) => {
+export const zipFile = async (
+  zipfilePath: string,
+  dirPath: string,
+  fileName: string
+) => {
   // convert to absolute path
   if (!path.isAbsolute(zipfilePath)) {
     zipfilePath = await Deno.realPath(zipfilePath)
   }
-  const dir = path.dirname(filePath)
-  const fileName = path.basename(filePath)
 
   // zip
   const process = Deno.run({
-    cwd: dir,
+    cwd: dirPath,
     cmd: ["zip", "-r", zipfilePath, fileName],
     stdout: "null",
     stderr: "piped",
