@@ -8,7 +8,7 @@ export const walkOnlyDir = async (
   callback: (filePath: string) => Promise<void>
 ): Promise<void> => {
   // convert to absolute path
-  if (path.isAbsolute(sourcePath)) {
+  if (!path.isAbsolute(sourcePath)) {
     sourcePath = await Deno.realPath(sourcePath)
   }
 
@@ -40,7 +40,7 @@ export const zip = async (dirPath: string, ext = "zip") => {
   const process = Deno.run({
     cwd: dirPath,
     cmd: ["zip", "-r", outputFileName, "*"],
-    stdout: "null",
+    stdout: "inherit",
     stderr: "piped",
   })
 
