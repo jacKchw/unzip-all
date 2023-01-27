@@ -1,5 +1,13 @@
 import * as path from "https://deno.land/std@0.170.0/path/mod.ts"
 import { parse } from "https://deno.land/std@0.174.0/flags/mod.ts"
+import ProgressBar from "https://deno.land/x/progress@v1.3.6/mod.ts"
+
+let progressBarTotal = 0
+let progressBarCompleted = 0
+const progressBar = new ProgressBar({
+  display: ":percent [:bar] :time :completed/:total",
+  total: progressBarTotal,
+})
 
 export const walkOnlyDir = async (
   sourcePath: string,
@@ -26,13 +34,17 @@ export const walkOnlyDir = async (
         // recursively read sub-directory
         await walkOnlyDir(itemPath, distDepth, depth + 1, callback)
       } catch (_error: unknown) {
-        console.log("Can't read: ", itemPath)
+        progressBar.console("Can't read: " + itemPath)
       }
     }
   }
 }
 
-export const zip = async (folderPath: string, ext = "zip") => {
+const zip = async (folderPath: string, ext = "zip") => {
+  // update progress bar
+  progressBarTotal++
+  progressBar.render(progressBarCompleted, { total: progressBarTotal })
+
   // convert to absolute path
   if (!path.isAbsolute(folderPath)) {
     folderPath = await Deno.realPath(folderPath)
@@ -46,6 +58,11 @@ export const zip = async (folderPath: string, ext = "zip") => {
     await zipFile(zipFilePath, itemPath)
   }
   await Deno.remove(folderPath, { recursive: true })
+
+  // update progress bar
+  progressBarCompleted++
+  progressBar.render(progressBarCompleted, { total: progressBarTotal })
+  progressBar.console("ziped: " + zipFilePath)
 }
 
 export const zipFile = async (zipfilePath: string, filePath: string) => {
@@ -82,15 +99,15 @@ if (import.meta.main) {
   if (flags.d == undefined) throw new Error("Required flag -d NUM")
 
   await walkOnlyDir(sourcePath, flags.d, 0, async (filePath) => {
-    if (flags.dry) {
-      console.log(filePath + "." + flags.ext)
-    } else {
-      try {
-        // Remove folder
+    try {
+      if (flags.dry) {
+        progressBar.console("zipped: " + filePath + "." + flags.ext)
+      } else {
         zip(filePath, flags.ext)
-        console.log("zip: ", filePath)
-      } catch (error: unknown) {
-        console.log(error)
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        progressBar.console(error.message)
       }
     }
   })
